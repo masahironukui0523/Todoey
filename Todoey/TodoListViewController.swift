@@ -13,12 +13,27 @@ class TodoListViewController: UITableViewController {
     // 前から順番にセルに入る
     var itemArray = ["宿題をする", "牛乳を買う", "手紙を書く" ]
 
-    
+    let defaults = UserDefaults.standard
     
     // MARK - セルの数を指定
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         
         return itemArray.count
+        
+    }
+    
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        // タイトルの大きさを変更
+        navigationController?.navigationBar.prefersLargeTitles = true
+        
+        // defaultsからデータの取り出し
+        if let items = defaults.array(forKey: "TodoListArray") as? [String] {
+            itemArray = items
+        }
+        
         
     }
     
@@ -69,6 +84,10 @@ class TodoListViewController: UITableViewController {
             
             // 配列に追加
             self.itemArray.append(textField.text!)
+            
+            // defaultsにデータを保存
+            self.defaults.set(self.itemArray, forKey: "TodoListArray")
+            
             // 更新
             self.tableView.reloadData()
             
