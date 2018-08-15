@@ -11,42 +11,28 @@ import UIKit
 class TodoListViewController: UITableViewController {
     
     var itemArray = [Item]()
-    let defaults = UserDefaults.standard
+    
+    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
     
     
     
     override func viewDidLoad() {
-        
+
         super.viewDidLoad()
+        
+        print(dataFilePath!)
         
         // NaviBarのタイトルを大きく表示させる
         navigationController?.navigationBar.prefersLargeTitles = true
         
-        let newItem = Item()
-        newItem.title = "宿題をする"
-        itemArray.append(newItem)
-        
-        let newItem2 = Item()
-        newItem2.title = "牛乳を買う"
-        itemArray.append(newItem2)
-        
-        let newItem3 = Item()
-        newItem3.title = "手紙を書く"
-        itemArray.append(newItem3)
-        
-        
-        
-        // defaultsからデータの取り出し
-        if let items = defaults.array(forKey: "TodoListArray") as? [Item] {
-            itemArray = items
-        }
+        // plistからデータを取得
+        loadItems()
         
     }
     
     
     
     // MARK - TableViewデータソースメソッド
-    
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         
         // セルの数を指定
@@ -67,15 +53,13 @@ class TodoListViewController: UITableViewController {
         // value = 条件 ? tureの場合の処理 : falseの場合の処理
         cell.accessoryType = item.done ? .checkmark : .none
         
-        
         return cell
         
     }
     
     
     
-    
-    // MARK - チェックマーク機能
+    // MARK - チェックマーク機能(デリゲートメソッド)
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         // 選択されたセルに実行される処理
         
@@ -83,8 +67,7 @@ class TodoListViewController: UITableViewController {
         
         itemArray[indexPath.row].done = !itemArray[indexPath.row].done
         
-        // マジカルメソッド！！　TableViewデータソースメソッドを呼び出しセルにチェックマークを反映
-        tableView.reloadData()
+        saveItems()
         
         // セルを選択した時の背景の変化を遅くする
         tableView.deselectRow(at: indexPath, animated: true)
@@ -94,7 +77,6 @@ class TodoListViewController: UITableViewController {
     
     
     // MARK - 新規アイテム追加機能
-    
     @IBAction func addButtonPressed(_ sender: Any) {
         // プラスボタンが押された時に実行される処理
         
@@ -106,26 +88,65 @@ class TodoListViewController: UITableViewController {
             // 「リストに追加」を押された時に実行される処理
             
             let newItem = Item()
+            
             newItem.title = textField.text!
             
             // アイテム追加処理
             self.itemArray.append(newItem)
             
-            // defaultsにデータを保存
-            self.defaults.set(self.itemArray, forKey: "TodoListArray")
-            
-            self.tableView.reloadData()
+            self.saveItems()
             
         }
         
         alert.addTextField { (alertTextField) in
+            
             alertTextField.placeholder = "新しいアイテム"
+            
             textField = alertTextField
+            
         }
         
         alert.addAction(action)
+        
         present(alert, animated: true, completion: nil)
         
+    }
+    
+    
+    
+    // MARK - データセーブ機能
+    func saveItems() {
+        
+        let encoder = PropertyListEncoder()
+        
+        do {
+            // itemArrayをencodeする
+            let data = try encoder.encode(itemArray)
+            try data.write(to: dataFilePath!)
+        } catch {
+            print("Error encoding item array, \(error)")
+        }
+        
+        self.tableView.reloadData()
+        
+    }
+    
+    
+    
+    // MARK - データロード機能
+    func loadItems() {
+        
+        if let data = try? Data(contentsOf: dataFilePath!) {
+            
+            let decoder = PropertyListDecoder()
+            
+            do {
+                itemArray = try decoder.decode([Item].self, from: data)
+            } catch {
+                print("Error decoding item array, \(error)")
+            }
+            
+        }
     }
     
     
@@ -135,8 +156,13 @@ class TodoListViewController: UITableViewController {
         
         // アイテム削除処理
         itemArray.remove(at: indexPath.row)
+        
         let indexPaths = [indexPath]
+        
         tableView.deleteRows(at: indexPaths, with: .automatic)
+        
+        // plistにセーブ
+        saveItems()
         
     }
 

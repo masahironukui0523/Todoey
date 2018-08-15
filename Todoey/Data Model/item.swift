@@ -9,7 +9,7 @@
 import Foundation
 
 // ファイル名と同じクラス名にする
-class Item {
+class Item: Codable {
     var title : String = ""
     var done: Bool = false
 }
